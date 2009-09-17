@@ -192,12 +192,12 @@ void RCommit::addFile(std::string& filename, std::string& action, vec3f colour) 
 }
 
 bool RCommit::isValid() {
-    // hack to deal with not being able to handle non Latin 1
+    // assume input is UTF-8
 
     int size = username.size();
     for(int i = 0; i<size; i++) {
-        char c = username[i];
-        if(c < 32 || c >= 127 && c <= 159) return false;
+        unsigned char c = (unsigned char)username[i];
+        if(c < 32 || c >= 0xfe) return false;
     }
 
     return true;

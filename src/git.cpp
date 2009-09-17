@@ -20,7 +20,7 @@
 // parse git log entries
 
 std::string gGourceGitLogCommand = "git log "
-    "--pretty=format:'%aN%n%ct' --reverse --raw";
+    "--pretty=format:'%aN%n%ct' --encoding=UTF-8 --reverse --raw";
 
 GitCommitLog::GitCommitLog(std::string logfile) : RCommitLog(logfile) {
 
