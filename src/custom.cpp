@@ -19,7 +19,7 @@
 
 Regex custom_regex("^([0-9]+)\\|([^|]+)\\|([ADM]?)\\|([^|]+)(?:\\|#?([A-F0-9]{6}))?");
 
-CustomLog::CustomLog(std::string logfile) : RCommitLog(logfile) {
+CustomLog::CustomLog(std::string logfile) : RCommitLog(logfile, 'u') {
 }
 
 vec3f CustomLog::parseColour(std::string cstr) {

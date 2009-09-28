@@ -330,6 +330,26 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        if(args == "--stdout") {
+
+            initializeStdoutExporter();
+            continue;
+        }
+
+#ifdef HAVE_FFMPEG
+        if(args == "--output-movie") {
+
+            if((i+1)>=arguments.size()) {
+                gource_help("specify movie file name");
+            }
+
+            std::string movie_file_name = arguments[++i];
+
+            initializeMovieExporter(movie_file_name);
+            continue;
+        }
+#endif
+
         // assume this is the log file
         if(args == "-" || args.size() >= 1 && args[0] != '-') {
             logfile = args;
@@ -414,6 +434,8 @@ int main(int argc, char *argv[]) {
 
     //free resources
     display.quit();
+
+    cleanupFrameExporter();
 
     return 0;
 }

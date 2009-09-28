@@ -56,6 +56,20 @@ AC_CHECK_HEADER([SDL/SDL_opengl.h],, AC_MSG_ERROR(SDL/SDL_opengl.h is required. 
 AC_CHECK_HEADER([SDL/SDL_image.h],, AC_MSG_ERROR(SDL/SDL_image.h is required. Please see README))
 AC_CHECK_HEADER([pcre.h],, AC_MSG_ERROR(pcre.h is required. Please see README))
 
+# ffmpeg support
+
+AH_TEMPLATE(FFMPEG, [Use ffmpeg (to save movies)])
+AC_ARG_WITH(ffmpeg,
+	[  --with-ffmpeg=dir       set ffmpeg home directory],,)
+if test ! -z "$with_ffmpeg"
+then
+	AC_CHECK_LIB(mp3lame, lame_init, LIB_MP3LAME="-lmp3lame",)
+	FFMPEG_CFLAGS="-DHAVE_FFMPEG -I$with_ffmpeg"
+	FFMPEG_LIBS="-L$with_ffmpeg/libavutil -L$with_ffmpeg/libavdevice -L$with_ffmpeg/libavcodec -L$with_ffmpeg/libavformat -L$with_ffmpeg/libswscale -lavformat -lavdevice -lavcodec -lavutil -lswscale"
+fi
+AC_SUBST(FFMPEG_CFLAGS)
+AC_SUBST(FFMPEG_LIBS)
+
 AC_CONFIG_FILES([Makefile
                  src/Makefile
                  src/core/Makefile])
