@@ -350,6 +350,16 @@ int main(int argc, char *argv[]) {
         }
 #endif
 
+         if(args == "--fps") {
+
+            if((i+1)>=arguments.size()) {
+                gource_help("specify movie file name");
+            }
+
+            gTicksPerFrame = (long)(1000 / atof(arguments[++i].c_str()));
+            continue;
+        }
+
         // assume this is the log file
         if(args == "-" || args.size() >= 1 && args[0] != '-') {
             logfile = args;

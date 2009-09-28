@@ -174,7 +174,8 @@ void gource_help(std::string error) {
 #ifdef HAVE_FFMPEG
     printf("  --output-movie FILE              Write a movie file, too\n");
 #endif
-    printf("  --stdout                         Dump frames as PPM to stdout\n\n");
+    printf("  --stdout                         Dump frames as PPM to stdout\n");
+    printf("  --fps FRAMES_PER_SECOND          Force the given number of frames per second\n\n");
 
     printf("\nPATH may be either a git directory or a pre-generated log file.\n");
     printf("If ommited, gource will attempt to generate a git log for the current dir.\n\n");
@@ -329,13 +330,13 @@ void Gource::init() {
 
 void Gource::update(float t, float dt) {
 
-    logic_time = SDL_GetTicks();
+    logic_time = GetTicks();
 
     logic(t, dt);
 
-    logic_time = SDL_GetTicks() - logic_time;
+    logic_time = GetTicks() - logic_time;
 
-    draw_time = SDL_GetTicks();
+    draw_time = GetTicks();
 
     draw(t, dt);
 }
@@ -942,7 +943,7 @@ void Gource::interactUsers() {
     quadtreebounds.min -= vec2f(1.0f, 1.0f);
     quadtreebounds.max += vec2f(1.0f, 1.0f);
 
-    update_user_tree_time = SDL_GetTicks();
+    update_user_tree_time = GetTicks();
 
     if(userTree != 0) delete userTree;
 
@@ -993,7 +994,7 @@ void Gource::interactUsers() {
         a->applyForceToActions();
     }
 
-    update_user_tree_time = SDL_GetTicks() - update_user_tree_time;
+    update_user_tree_time = GetTicks() - update_user_tree_time;
 }
 
 
@@ -1059,7 +1060,7 @@ void Gource::interactDirs() {
     quadtreebounds.min -= vec2f(1.0f, 1.0f);
     quadtreebounds.max += vec2f(1.0f, 1.0f);
 
-    update_dir_tree_time = SDL_GetTicks();
+    update_dir_tree_time = GetTicks();
 
     if(dirNodeTree !=0) delete dirNodeTree;
 
@@ -1082,7 +1083,7 @@ void Gource::interactDirs() {
         }
     }
 
-    update_dir_tree_time = SDL_GetTicks() - update_dir_tree_time;
+    update_dir_tree_time = GetTicks() - update_dir_tree_time;
 
     root->applyForces(*dirNodeTree);
 }
@@ -1332,6 +1333,14 @@ void Gource::loadingScreen() {
     font.print(display.width/2 - width/2, display.height/2 - 10, "%s", loading_message.c_str());
 }
 
+static long ticks;
+long gTicksPerFrame = 0;
+long GetTicks() {
+    if (gTicksPerFrame == 0)
+        return SDL_GetTicks();
+    return ticks;
+}
+
 void Gource::draw(float t, float dt) {
     dt = std::min(dt, gGourceMaxDelta);
 
@@ -1363,11 +1372,11 @@ void Gource::draw(float t, float dt) {
 
     Frustum frustum(camera);
 
-    trace_time = SDL_GetTicks();
+    trace_time = GetTicks();
 
     mousetrace(frustum,dt);
 
-    trace_time = SDL_GetTicks() - trace_time;
+    trace_time = GetTicks() - trace_time;
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -1377,7 +1386,7 @@ void Gource::draw(float t, float dt) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    draw_tree_time = SDL_GetTicks();
+    draw_tree_time = GetTicks();
 
     root->calcEdges();
 
@@ -1429,7 +1438,7 @@ void Gource::draw(float t, float dt) {
     glColor4f(0.0, 1.0, 0.0, 1.0);
     trace_debug ? root->drawSimple(frustum,dt) : root->drawFiles(frustum,dt);
 
-    draw_tree_time = SDL_GetTicks() - draw_tree_time;
+    draw_tree_time = GetTicks() - draw_tree_time;
 
     glColor4f(1.0, 1.0, 0.0, 1.0);
     for(std::map<std::string,RUser*>::iterator it = users.begin(); it!=users.end(); it++) {
@@ -1531,7 +1540,7 @@ void Gource::draw(float t, float dt) {
         font.print(0,200,"Draw Tree: %u ms", draw_tree_time);
         font.print(0,220,"Mouse Trace: %u ms", trace_time);
         font.print(0,240,"Logic Time: %u ms", logic_time);
-        font.print(0,260,"Draw Time: %u ms", SDL_GetTicks() - draw_time);
+        font.print(0,260,"Draw Time: %u ms", GetTicks() - draw_time);
         font.print(0,280,"File Inner Loops: %d", gGourceFileInnerLoops);
         font.print(0,300,"User Inner Loops: %d", gGourceUserInnerLoops);
         font.print(0,320,"Dir Inner Loops: %d (QTree items = %d, nodes = %d)", gGourceDirNodeInnerLoops,
@@ -1556,5 +1565,6 @@ void Gource::draw(float t, float dt) {
     mouseclicked=false;
 
     dumpFrame();
+    ticks += gTicksPerFrame;
 }
 

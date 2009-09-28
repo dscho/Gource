@@ -104,4 +104,7 @@ public:
 
 extern SDLAppDisplay display;
 
+extern long gTicksPerFrame;
+extern long GetTicks();
+
 #endif

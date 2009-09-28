@@ -65,18 +65,18 @@ int SDLApp::run() {
 
     if(!appFinished) init();
 
-    msec = SDL_GetTicks();
+    msec = GetTicks();
     last_msec = msec;
 
     while(!appFinished) {
         last_msec = msec;
-        msec      = SDL_GetTicks();
+        msec      = GetTicks();
 
         Uint32 delta_msec = msec - last_msec;
 
         // cant have delta ticks be 0
         buffer_msec += delta_msec;
-        if(buffer_msec < 1) {
+        if(!gTicksPerFrame && buffer_msec < 1) {
             SDL_Delay(1);
             continue;
         }
