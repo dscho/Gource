@@ -348,7 +348,7 @@ Gource::~Gource() {
 void Gource::init() {
 }
 
-void Gource::update(float t, float dt) {
+bool Gource::update(float t, float dt) {
 
     logic_time = GetTicks();
 
@@ -357,8 +357,11 @@ void Gource::update(float t, float dt) {
     logic_time = GetTicks() - logic_time;
 
     draw_time = GetTicks();
+    if (gTicksPerFrame > 0 && currtime >= time(NULL))
+       return false;
 
     draw(t, dt);
+    return true;
 }
 
 //peek at the date under the mouse pointer on the slider

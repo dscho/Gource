@@ -177,7 +177,7 @@ public:
     void draw(float t, float dt);
 
     void init();
-    void update(float t, float dt);
+    bool update(float t, float dt);
     void keyPress(SDL_KeyboardEvent *e);
     void mouseMove(SDL_MouseMotionEvent *e);
     void mouseClick(SDL_MouseButtonEvent *e);

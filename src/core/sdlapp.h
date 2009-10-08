@@ -49,7 +49,7 @@ public:
     SDLApp();
     int run();
 
-    virtual void update(float t, float dt) {};
+    virtual bool update(float t, float dt) { return true; };
     virtual void init() {};
 
     virtual void logic(float t, float dt) {};

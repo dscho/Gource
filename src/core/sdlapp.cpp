@@ -131,7 +131,8 @@ int SDLApp::run() {
             }
         }
 
-        update(t, dt);
+        if (!update(t, dt))
+            break;
 
         //update display
         display.update();
