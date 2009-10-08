@@ -135,7 +135,10 @@ int main(int argc, char *argv[]) {
 
             gGourceLogFormat = arguments[++i];
 
-            if(gGourceLogFormat != "git" && gGourceLogFormat != "cvs" && gGourceLogFormat != "custom") {
+            if(   gGourceLogFormat != "git"
+               && gGourceLogFormat != "cvs"
+               && gGourceLogFormat != "custom"
+               && gGourceLogFormat != "apache") {
                 gource_help("unknown log-format");
             }
 
@@ -221,6 +224,12 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        if(args == "--realtime") {
+            gGourceDaysPerSecond = 1.0 / 86400.0;
+
+            continue;
+        }
+
         if(args == "-a" || args == "--auto-skip-seconds") {
 
             if((i+1)>=arguments.size()) {
@@ -276,6 +285,53 @@ int main(int argc, char *argv[]) {
 
             if(gGourceMaxFiles<1) {
                 gource_help("invalid max-files value");
+            }
+
+            continue;
+        }
+
+        if(args == "--max-file-lag") {
+
+            if((i+1)>=arguments.size()) {
+                gource_help("specify max-file-lag (seconds)");
+            }
+
+            gGourceMaxFileLagSeconds = atof(arguments[++i].c_str());
+
+            if(gGourceMaxFileLagSeconds==0.0) {
+                gource_help("invalid max-file-lag value");
+            }
+
+            continue;
+        }
+
+        if(args == "--user-friction") {
+
+            if((i+1)>=arguments.size()) {
+                gource_help("specify user-friction (seconds)");
+            }
+
+            gGourceUserFriction = atof(arguments[++i].c_str());
+
+            if(gGourceUserFriction<=0.0) {
+                gource_help("invalid user-friction value");
+            }
+
+            gGourceUserFriction = 1.0 / gGourceUserFriction;
+
+            continue;
+        }
+
+        if(args == "--max-user-speed") {
+
+            if((i+1)>=arguments.size()) {
+                gource_help("specify max-user-speed (units)");
+            }
+
+            gGourceMaxUserSpeed = atof(arguments[++i].c_str());
+
+            if(gGourceMaxUserSpeed<=0) {
+                gource_help("invalid max-user-speed value");
             }
 
             continue;

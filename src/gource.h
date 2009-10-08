@@ -39,6 +39,7 @@
 #include "gitraw.h"
 #include "cvs-exp.h"
 #include "custom.h"
+#include "apache.h"
 
 #include "slider.h"
 
@@ -97,13 +98,12 @@ class Gource : public SDLApp {
     bool draw_loading;
     bool paused;
 
-    long starttime;
-    long currtime;
+    long  currtime;
+    float subseconds;
 
     float splash;
 
     float idle_time;
-    float elapsed_time;
 
     Uint32 draw_tree_time;
     Uint32 update_dir_tree_time;
@@ -137,7 +137,7 @@ class Gource : public SDLApp {
     void selectNextUser();
 
     void readLog();
-    void processCommit(RCommit& commit);
+    void processCommit(RCommit& commit, float t);
 
     std::string dateAtPosition(float percent);
 
@@ -147,7 +147,7 @@ class Gource : public SDLApp {
 
     void interactUsers();
     void interactDirs();
-    void updateUsers(float dt);
+    void updateUsers(float t, float dt);
     void updateDirs(float dt);
 
     void updateTime();

@@ -105,6 +105,15 @@ options:
     --max-files
             Set the maximum number of files. Excess files will be discarded.
 
+    --max-file-lag SECONDS
+            Max time files of a commit can take to appear.
+
+    --max-user-speed UNITS
+            Max speed users can travel per second.
+
+    --user-friction SECONDS
+            Time users come to a complete hault.
+
     --hide-users
             Hide users.
 
@@ -142,17 +151,37 @@ the command line to work with an older version (changing %aN to %an for instance
 
 CVS Support:
 
-You can view CVS projects with gource using the tool cvs-exp  (not  provided)  with  the  command  line  specified  by  the
+You can view CVS projects with gource using the tool cvs-exp (not provided) with the command line specified by the
 --cvs-exp-command option:
 
     cd my-cvs-project
     `gource --cvs-exp-command` > my-cvs-project.log
     gource my-cvs-project.log
 
+SVN Support via Git:
+
+SVN is not supported directly, however you could can import your project into a Git repository using the 'git svn' command.
+
+The below insturctions will work if your SVN repository has the standard three directories - trunk, tags and branches
+(Otherwise, see the 'git svn' documentation):
+
+    git svn init --stdlayout https://myrepo.example.org/svn my-repo.git
+    cd my-repo.git
+    git svn fetch
+
+Note that the last command (git svn fetch) can take hours if your repository is large.
+
+You can pull new changes into the Git copy of your SVN repository at any time using the following command:
+
+    git svn rebase
+
+Support for Other Systems:
+
+Please check the Gource homepage to see guides for other systems that can be used with Gource, or try using the custom log format.
 
 Custom Log Format:
 
-If you want to use Gource with something other than Git or CVS, there is a pipe delimited custom log format:
+If you want to use Gource with something other than the supported systems, there is a pipe delimited custom log format:
 
     timestamp - A unix timestamp of when the update occured.
     username  - The name of the user who made the update.
@@ -193,6 +222,8 @@ Gource requires the following libraries to compile:
     SDL Image 1.2 (libsdl-image1.2-dev)
     PCRE3 (libpcre3-dev)
     FTGL 2.1.3~rc5-2 (libftgl-dev)
+    PNG library (libpng12-dev)
+    JPEG library (libjpeg62-dev)
 
 Building on Linux:
 
@@ -210,6 +241,22 @@ with the Code Blocks IDE (www.codeblocks.org).
 5. Changes
 ==========
 
+0.15:
+ * Added --max-file-lag option to limit how long after a commit file changes can take to appear.
+ * Added --no-renames to the git log command as they don't display correctly.
+ * Added --max-user-speed and --user-friction as options.
+ * Now builds on OSX Leopard (with the required libaries installed).
+ * Caught raw exception from replace_invalid().
+ * Added CXXFLAGS. You may want to override the default (eg CXXFLAGS=-O3 ./configure).
+
+0.14:
+ * Updated SVN instructions.
+
+0.13:
+ * Removed single quotes from log command (fixes running gource --git-log-command in back ticks)
+ * Added SVN instructions.
+ * Fixed manpage hyphens.
+
 0.12:
  * Added --enable-ttf-font-dir=DIR option to configure (to specify the ttf-freefont directory).
  * UTF-8 support using UTF8-CPP (http://utfcpp.sourceforge.net/).
@@ -219,6 +266,7 @@ with the Code Blocks IDE (www.codeblocks.org).
  * Added --git-branch command.
  * Added --loop command.
  * Added --crop command.
+
 0.11:
  * Made N key skip to next entry.
  * Documented --user-image-dir flag.

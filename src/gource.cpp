@@ -143,34 +143,41 @@ void gource_help(std::string error) {
     printf("  -e, --elasticity FLOAT           Elasticity of nodes\n");
     printf("  -b, --background FFFFFF          Background colour in hex\n\n");
 
-    printf("  --loop                           Loop when the end of the log is reached.\n\n");
+    printf("  --user-image-dir DIRECTORY       Dir containing images to use as avatars\n");
+    printf("  --default-user-image IMAGE       Default user image file\n");
+    printf("  --colour-images                  Colourize user images\n\n");
 
-    printf("  --log-format FORMAT              Specify format of log (git,cvs,custom)\n");
-    printf("  --git-branch                     Get the git log of a particular branch\n");
-    printf("  --git-log-command                Show git-log command used by gource\n");
-    printf("  --cvs-exp-command                Show cvs-exp.pl log command used by gource\n\n");
+    printf("  --realtime                       Realtime playback speed\n\n");
 
-    printf("  --multi-sampling                 Enable multi-sampling\n");
-    printf("  --crop AXIS                      Crop view on an axis (vertical,horizontal)\n\n");
+    printf("  --loop                   Loop when the end of the log is reached.\n\n");
 
-    printf("  --disable-auto-skip              Disable auto skipping\n");
-    printf("  --disable-progress               Disable the progress bar\n\n");
+    printf("  --log-format FORMAT      Specify format of log (git,cvs,custom)\n");
+    printf("  --git-branch             Get the git log of a particular branch\n");
+    printf("  --git-log-command        Show git-log command used by gource\n");
+    printf("  --cvs-exp-command        Show cvs-exp.pl log command used by gource\n\n");
 
-    printf("  --hide-users                     Hide users\n");
-    printf("  --hide-usernames                 Hide usernames\n");
-    printf("  --hide-filenames                 Hide filenames\n");
-    printf("  --hide-date                      Hide the date\n\n");
+    printf("  --multi-sampling         Enable multi-sampling\n");
+    printf("  --crop AXIS              Crop view on an axis (vertical,horizontal)\n\n");
 
-    printf("  --user-image-dir DIRECTORY       Dir containing images to use as avatars.\n");
-    printf("  --default-user-image IMAGE       Default user image file.\n");
-    printf("  --colour-images                  Colourize user images.\n\n");
+    printf("  --disable-auto-skip      Disable auto skipping\n");
+    printf("  --disable-progress       Disable the progress bar\n\n");
 
-    printf("  --max-files NUMBER               Maximum of active files (default: 1000)\n\n");
+    printf("  --hide-users             Hide users\n");
+    printf("  --hide-usernames         Hide usernames\n");
+    printf("  --hide-filenames         Hide filenames\n");
+    printf("  --hide-date              Hide the date\n\n");
 
-    printf("  --follow-user USER               Camera will automatically follow this user\n");
-    printf("  --highlight-user USER            Highlight the names of a particular user\n");
-    printf("  --highlight-all-users            Highlight the names of all users\n");
-    printf("  --file-filter REGEX              Ignore files matching this regexe\n\n");
+    printf("  --max-files NUMBER       Max number of active files (default: 1000)\n");
+    printf("  --max-file-lag SECONDS   Max time files of a commit can take to appear\n\n");
+
+    printf("  --max-user-speed UNITS   Speed users can travel per second (default: 500)\n\n");
+    printf("  --user-friction SECONDS  Time users come to a complete hault (default: 0.67)\n\n");
+
+    printf("  --follow-user USER       Camera will automatically follow this user\n");
+    printf("  --highlight-user USER    Highlight the names of a particular user\n");
+    printf("  --highlight-all-users    Highlight the names of all users\n");
+    printf("  --file-filter REGEX      Ignore files matching this regexe\n\n");
+
 #ifdef HAVE_FFMPEG
     printf("  --output-movie FILE              Write a movie file, too\n");
 #endif
@@ -224,6 +231,12 @@ RCommitLog* Gource::determineFormat(std::string logfile) {
             delete clog;
         }
 
+        if(gGourceLogFormat == "apache") {
+            clog = new ApacheCombinedLog(logfile);
+            if(clog->checkFormat()) return clog;
+            delete clog;
+        }
+
         return 0;
     }
 
@@ -251,6 +264,13 @@ RCommitLog* Gource::determineFormat(std::string logfile) {
     //custom
     debugLog("trying custom...\n");
     clog = new CustomLog(logfile);
+    if(clog->checkFormat()) return clog;
+
+    delete clog;
+
+    //apache
+    debugLog("trying apache combined...\n");
+    clog = new ApacheCombinedLog(logfile);
     if(clog->checkFormat()) return clog;
 
     delete clog;
@@ -607,11 +627,19 @@ void Gource::keyPress(SDL_KeyboardEvent *e) {
         }
 
         if (e->keysym.sym == SDLK_EQUALS) {
-            gGourceDaysPerSecond *= 2.0;
+            if(gGourceDaysPerSecond>=1.0) {
+                gGourceDaysPerSecond = std::min(30.0f, floorf(gGourceDaysPerSecond) + 1.0f);
+            } else {
+                gGourceDaysPerSecond = std::min(1.0f, gGourceDaysPerSecond * 2.0f);
+            }
         }
 
         if (e->keysym.sym == SDLK_MINUS) {
-            if(gGourceDaysPerSecond>0.0) gGourceDaysPerSecond *= 0.5;
+            if(gGourceDaysPerSecond>1.0) {
+                gGourceDaysPerSecond = std::max(0.0f, floorf(gGourceDaysPerSecond) - 1.0f);
+            } else {
+                gGourceDaysPerSecond = std::max(0.0f, gGourceDaysPerSecond * 0.5f);
+            }
         }
 
         if(e->keysym.sym == SDLK_UP) {
@@ -702,9 +730,8 @@ void Gource::reset() {
     files.clear();
 
     idle_time=0;
-    elapsed_time=0;
     currtime=0;
-    starttime = 0;
+    subseconds=0.0;
     tag_seq = 1;
     commit_seq = 1;
 }
@@ -817,7 +844,7 @@ void Gource::readLog() {
     //debugLog("current date: %s\n", displaydate.c_str());
 }
 
-void Gource::processCommit(RCommit& commit) {
+void Gource::processCommit(RCommit& commit, float t) {
 
     //find user of this commit or create them
     RUser* user = 0;
@@ -921,12 +948,12 @@ void Gource::processCommit(RCommit& commit) {
         int commitNo = commit_seq++;
 
         if(cf.action == "D") {
-            action = new RemoveAction(user, file);
+            action = new RemoveAction(user, file, t);
         } else {
             if(cf.action == "A") {
-                action = new CreateAction(user, file);
+                action = new CreateAction(user, file, t);
             } else {
-                action = new ModifyAction(user, file);
+                action = new ModifyAction(user, file, t);
             }
         }
 
@@ -998,7 +1025,7 @@ void Gource::interactUsers() {
 }
 
 
-void Gource::updateUsers(float dt) {
+void Gource::updateUsers(float t, float dt) {
     std::vector<RUser*> inactiveUsers;
 
     int idle_users = 0;
@@ -1010,7 +1037,7 @@ void Gource::updateUsers(float dt) {
     for(std::map<std::string,RUser*>::iterator it = users.begin(); it!=users.end(); it++) {
         RUser* u = it->second;
 
-        u->logic(dt);
+        u->logic(t, dt);
 
         //deselect user if fading out from inactivity
         if(u->isFading() && selectedUser == u) {
@@ -1140,8 +1167,6 @@ void Gource::logic(float t, float dt) {
 
     if(paused) return;
 
-    elapsed_time += dt * 86400.0 * gGourceDaysPerSecond;
-
     // get more entries
     if(commitqueue.size() == 0) {
         readLog();
@@ -1154,14 +1179,23 @@ void Gource::logic(float t, float dt) {
         readLog();
     }
 
-    if(starttime==0 && commitqueue.size()) {
-        starttime = commitqueue[0].timestamp;
+    if(currtime==0 && commitqueue.size()) {
+        currtime   = commitqueue[0].timestamp;
+        subseconds = 0.0;
     }
 
     //set current time
-    currtime = starttime + elapsed_time;
-    float csubsec  = elapsed_time - floorf(elapsed_time);
+    float time_inc = (dt * 86400.0 * gGourceDaysPerSecond);
+    int seconds    = (int) time_inc;
 
+    subseconds += time_inc - ((float) seconds);
+
+    if(subseconds >= 1.0) {
+        currtime   += (int) subseconds;
+        subseconds -= (int) subseconds;
+    }
+
+    currtime   += seconds;
 
     // delete files
     for(std::vector<RFile*>::iterator it = gGourceRemovedFiles.begin(); it != gGourceRemovedFiles.end(); it++) {
@@ -1178,13 +1212,16 @@ void Gource::logic(float t, float dt) {
 
         if(gGourceAutoSkipSeconds>=0.0 && idle_time >= gGourceAutoSkipSeconds) {
             currtime = commit.timestamp;
-            elapsed_time = commit.timestamp - starttime;
             idle_time = 0.0;
         }
 
         if(commit.timestamp > currtime) break;
 
-        processCommit(commit);
+        processCommit(commit, t);
+
+        currtime = commit.timestamp;
+        subseconds = 0.0;
+
         commitqueue.pop_front();
     }
 
@@ -1196,7 +1233,7 @@ void Gource::logic(float t, float dt) {
     interactUsers();
     interactDirs();
 
-    updateUsers(dt);
+    updateUsers(t, dt);
     updateDirs(dt);
 
     updateTime();

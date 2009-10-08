@@ -29,32 +29,54 @@ AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit getcwd memset sqrt strchr])
 
-#check for GLU
+#GL
 AX_CHECK_GLU
+CFLAGS="$CFLAGS $GLU_CFLAGS"
+CPPFLAGS="$CPPFLAGS $GLU_CFLAGS"
+LIBS="$LIBS $GLU_LIBS"
 
-AC_CHECK_LIB([SDL], [main],, AC_MSG_ERROR(SDL is required. Please see README))
-AC_CHECK_LIB([SDL_image], [main],, AC_MSG_ERROR(SDL_image is required. Please see README))
-AC_CHECK_LIB([pcre], [main],, AC_MSG_ERROR(pcre is required. Please see README))
-AC_CHECK_LIB([ftgl], [main],, AC_MSG_ERROR(ftgl is required. Please see README))
+#SDL
+SDL_VERSION=1.2.0
+AM_PATH_SDL($SDL_VERSION,
+            :,
+            AC_MSG_ERROR([*** SDL version $SDL_VERSION not found!])
+)
+CFLAGS="$CFLAGS $SDL_CFLAGS"
+CPPFLAGS="$CPPFLAGS $SDL_CFLAGS"
+LIBS="$LIBS $SDL_LIBS"
 
 #Freetype2
 AC_CHECK_FT2([9.0.3],[],[AC_MSG_ERROR([FreeType2 is required by FTGL. Please see README])])
-
-AC_ARG_ENABLE(ttf-font-dir,[AS_HELP_STRING([--enable-ttf-font-dir=DIR],[directory containing FreeSans.ttf])],[gourcefontdir="$enableval"],[gourcefontdir=""])
-AC_SUBST(gourcefontdir)
-
-# Add FT2 flags. Also means FTGL header check will work. Yay.
 CFLAGS="$CFLAGS $FT2_CFLAGS"
 CPPFLAGS="$CPPFLAGS $FT2_CFLAGS"
 
-AC_CHECK_HEADER([FTGL/ftgl.h],, AC_MSG_ERROR(FTGL/ftgl.h is required. Please see README))
+#FTGL
+PKG_CHECK_MODULES(FTGL, ftgl >= 2.1.3, [], AC_MSG_ERROR(ftgl 2.1.3 or greater is required. Please see README))
+CFLAGS="$CFLAGS $FTGL_CFLAGS"
+CPPFLAGS="$CPPFLAGS $FTGL_CFLAGS"
+LIBS="$LIBS $FTGL_LIBS"
 
-# Check for SDL, SDL_Image, FTGL, pcre headers
+#PNG library
+AC_CHECK_LIB(png, png_read_info, , AC_MSG_ERROR([PNG library required. Please see README]))
 
-AC_CHECK_HEADER([SDL/SDL.h],, AC_MSG_ERROR(SDL/SDL.h is required. Please see README))
-AC_CHECK_HEADER([SDL/SDL_opengl.h],, AC_MSG_ERROR(SDL/SDL_opengl.h is required. Please see README))
-AC_CHECK_HEADER([SDL/SDL_image.h],, AC_MSG_ERROR(SDL/SDL_image.h is required. Please see README))
+#JPEG library
+AC_CHECK_LIB(jpeg, jpeg_read_header, , AC_MSG_ERROR([JPEG library required. Please see README]))
+
+#SDL_image library with PNG support
+AC_CHECK_LIB(SDL_image, IMG_LoadPNG_RW, , AC_MSG_ERROR([SDL_image required. Please see README]))
+
+#PCRE
+AC_CHECK_LIB([pcre], [pcre_compile],, AC_MSG_ERROR(PCRE is required. Please see README))
+
+#Check for required headers
+AC_CHECK_HEADER([SDL.h],, AC_MSG_ERROR(SDL.h is required. Please see README))
+AC_CHECK_HEADER([SDL_image.h],, AC_MSG_ERROR(SDL_image.h is required. Please see README))
+AC_CHECK_HEADER([ftgl.h],, AC_MSG_ERROR(ftgl.h is required. Please see README))
 AC_CHECK_HEADER([pcre.h],, AC_MSG_ERROR(pcre.h is required. Please see README))
+
+#see if ttf-font-dir option is enabled
+AC_ARG_ENABLE(ttf-font-dir,[AS_HELP_STRING([--enable-ttf-font-dir=DIR],[directory containing FreeSans.ttf])],[gourcefontdir="$enableval"],[gourcefontdir=""])
+AC_SUBST(gourcefontdir)
 
 # ffmpeg support
 
