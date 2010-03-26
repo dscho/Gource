@@ -42,7 +42,11 @@ SDLAppDisplay::SDLAppDisplay() {
 SDLAppDisplay::~SDLAppDisplay() {
 }
 
+static const char *argv0;
+
 void SDLAppDisplay::displayArgs(int argc, char *argv[], int* xres, int* yres, bool* fullscreen, std::vector<std::string>* otherargs) {
+
+    argv0 = argv[0];
 
     for (int i=1; i<argc; i++) {
         debugLog("argv[%d] = %s\n", i, argv[i]);
@@ -107,8 +111,15 @@ bool SDLAppDisplay::dirExists(std::string path) {
 
 void SDLAppDisplay::detectPath() {
 
-    std::string resource_dir = "data/";
-    std::string fonts_dir    = "data/fonts/";
+    std::string base_dir = argv0;
+    int pos = base_dir.rfind("/");
+    if (pos != std::string::npos)
+        base_dir = base_dir.substr(0, pos) + "/";
+    else
+        base_dir = "";
+
+    std::string resource_dir = base_dir + "data/";
+    std::string fonts_dir    = base_dir + "data/fonts/";
 #ifdef _WIN32
     char szAppPath[MAX_PATH];
     GetModuleFileName(0, szAppPath, MAX_PATH);
@@ -116,7 +127,7 @@ void SDLAppDisplay::detectPath() {
     // Extract directory
     std::string exepath = std::string(szAppPath);
 
-    int pos = exepath.rfind("\\");
+    pos = exepath.rfind("\\");
 
     path = exepath.substr(0, pos+1);
     resource_dir = path + std::string("\\data\\");
